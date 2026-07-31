@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -16,9 +16,20 @@ namespace WindowsFormsApp1
         private SidebarManager sidebarManager;
         private StatusBarManager statusBarManager;
         private MainpageManger mainpageManger;
+        private Timer timer;
         public Form1()
         {
             //InitializeComponent();
+            titlebarManager = new TitlebarManager(this);
+            sidebarManager = new SidebarManager(this);
+            statusBarManager = new StatusBarManager(this);
+            mainpageManger = new MainpageManger(this);
+
+            BuildUI();
+            StartTimer();
+        }
+        private void BuildUI()
+        {
             this.Text = "AutoScripts · Volume Profile MT5";
             this.Size = new Size(1100, 700);
             this.MinimumSize = new Size(900, 600);
@@ -29,22 +40,12 @@ namespace WindowsFormsApp1
             this.DoubleBuffered = true;
             this.FormBorderStyle = FormBorderStyle.None;
 
-            titlebarManager = new TitlebarManager(this);
-            sidebarManager = new SidebarManager(this);
-            statusBarManager = new StatusBarManager(this);
-            mainpageManger = new MainpageManger(this);
-
-            BuildUI();
-        }
-        private void BuildUI()
-        {
             titlebarManager.BuildTitlebar();
             sidebarManager.BuildSidebar();
             mainpageManger.BuildMain();
             statusBarManager.BuildStatusBar();
             this.Resize += (s, e) => RelayoutMain();
             RelayoutMain();
-
         }
         private void RelayoutMain()
         {
@@ -66,7 +67,21 @@ namespace WindowsFormsApp1
                 mainpageManger.pnlContent.Location = new Point(0, mainpageManger.pnlHeader.Height);
                 mainpageManger.pnlContent.Size = new Size(mainpageManger.pnlMain.Width, mainpageManger.pnlMain.Height - mainpageManger.pnlHeader.Height);
             }
-            mainpageManger.LayoutContent();
+        }
+
+        private void StartTimer()
+        {
+            timer = new Timer { Interval = 1000 };
+            timer.Tick += (s, e) =>
+            {
+                if(statusBarManager.lblClock != null) statusBarManager.lblClock.Text = DateTime.Now.ToString("yyyy.MM.dd · HH:mm:ss");
+            };
+            timer.Start();
+        }
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            timer?.Stop();
+            base.OnFormClosed(e);
         }
     }
     internal static class NativeMethods
