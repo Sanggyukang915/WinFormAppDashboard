@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -50,9 +50,12 @@ namespace WindowsFormsApp1
 
             void PositionWinBtns()
             {
+
                 btnClose.Location = new Point(pnlTitleBar.Width - 28, 17);
                 btnMax.Location = new Point(pnlTitleBar.Width - 48, 17);
                 btnMin.Location = new Point(pnlTitleBar.Width - 68, 17);
+
+                pnlTitleBar.Invalidate();
             }
             PositionWinBtns();
             pnlTitleBar.Resize += (s, e) => PositionWinBtns();
