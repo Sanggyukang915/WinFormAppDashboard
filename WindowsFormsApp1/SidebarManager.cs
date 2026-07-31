@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -23,7 +23,6 @@ namespace WindowsFormsApp1
             pnlSidebar = new Panel 
             { 
                 BackColor = AppColor.BgPanel,
-                Width = 200,
             };
             pnlSidebar.Paint += (s, e) =>
             {
