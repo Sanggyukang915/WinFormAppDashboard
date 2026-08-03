@@ -34,10 +34,10 @@ namespace WindowsFormsApp1
             var items = new[]
             {
                 new[]{ "MENU","" },
-                new[]{ "ℹ","Report Manage" },
-                new[]{ "▦","Line Manage" },
-                new[]{ "▤","DB Data Search" },
-                new[]{ "◎", "VNC MultiViwer" },
+                new[]{ "asd","Report Manage" },
+                new[]{ "asd","Line Manage" },
+                new[]{ "asd","DB Data Search" },
+                new[]{ "asd", "VNC MultiViwer" },
             };
 
             int y = 12;

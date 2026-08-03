@@ -21,5 +21,6 @@ namespace WindowsFormsApp1
         public static readonly Color TextPrimary = Color.FromArgb(232, 236, 245);
         public static readonly Color TextSecondary = Color.FromArgb(122, 130, 153);
         public static readonly Color TextMuted = Color.FromArgb(69, 77, 102);
+        public static readonly Color White = Color.FromArgb(255, 255, 240);
     }
 }
