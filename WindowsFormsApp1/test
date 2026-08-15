@@ -1,0 +1,147 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace WindowsFormsApp1
+{
+    internal class Page1
+    {
+        private readonly Form _mainForm;
+        private readonly DBConnect dbconn = new DBConnect();
+        private DataTable pointInfos = new DataTable();
+        public Panel pnlMain;
+
+        public Page1(Form mainForm)
+        {
+            _mainForm = mainForm;
+
+
+            if (!dbconn.GetData(query, pointInfos))
+                return;
+        }
+
+        public void BuildPage()
+        {
+            pnlMain = new Panel { BackColor = AppColor.BgDeep};
+            Panel pnlLineMenu = BuildLineMenu();
+            Panel pnlLineDetail = BuildLineDetail();
+
+        
+            pnlMain.Controls.AddRange(new Control[] { pnlLineMenu, pnlLineDetail });
+            _mainForm.Controls.Add(pnlMain);
+
+            pnlMain.Resize += (s, e) =>
+            {
+                pnlLineMenu.Size = new Size(200, pnlMain.Height);
+                pnlLineDetail.Location = new Point(200, 0);
+                pnlLineDetail.Size = new Size(pnlMain.Width - 200, pnlMain.Height);
+                pnlLineMenu.Refresh();
+                pnlLineDetail.Refresh();
+            };
+        }
+
+        private Panel BuildLineMenu()
+        {
+            Panel pMain = new Panel { BackColor = AppColor.BgPanel };
+
+            pMain.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(25, 255, 255, 255)))
+                    e.Graphics.DrawLine(pen, pMain.Width - 1, 0,
+                                             pMain.Width - 1, pMain.Height);
+            };
+
+            if (pointInfos.Rows.Count > 0)
+            {
+                var groupData = from row in pointInfos.AsEnumerable()
+                                group row by row.Field<string>("LineName") into g
+                                select new
+                                {
+                                    LineName = g.Key,
+                                    Rows = g.ToList(),
+                                    Count = g.Count(),
+                                };
+                int cardY = 0;
+                foreach (var group in groupData)
+                {
+                    Panel p = new Panel { BackColor = AppColor.BgPanel, Location = new Point(0, cardY), Size = new Size(200, 24) };
+                    p.Paint += (s, e) => PaintCard(e.Graphics, p, group.LineName.ToString(), true);
+                    cardY += 24;
+
+                    //int y = 34;
+                    //foreach (var row in group.Rows)
+                    //{
+                    //    p.Controls.Add(new Label
+                    //    {
+                    //        Text = row["SysName"].ToString(),
+                    //        Location = new Point(10, y),
+                    //        Size = new Size(135, 16),
+                    //        ForeColor = AppColor.TextPrimary,
+                    //        Font = new Font("Segoe UI", 8f),
+                    //        BackColor = Color.Transparent
+                    //    });
+                    //    y += 22;
+                    //}
+                    pMain.Controls.Add(p);
+                }
+            }
+            return pMain;
+        }
+        private Panel BuildLineDetail()
+        {
+            Panel pMain = new Panel { BackColor = AppColor.BgPanel };
+
+            pMain.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(25, 255, 255, 255)))
+                    e.Graphics.DrawLine(pen, pMain.Width - 1, 0,
+                                             pMain.Width - 1, pMain.Height);
+            };
+
+            Panel pSys = new Panel { BackColor = AppColor.BgCard };
+            Panel pDetail = new Panel { BackColor = AppColor.BgCard };
+
+            pSys.Paint += (s, e) => PaintCard(e.Graphics, pSys, "System Detail", false);
+            pDetail.Paint += (s, e) => PaintCard(e.Graphics, pDetail, "Station Detail", false);
+
+
+
+            pMain.Controls.AddRange(new Control[] { pSys, pDetail });
+            pMain.Resize += (s, e) =>
+            {
+                pSys.Size = new Size(pMain.Width / 2, pMain.Height);
+                pDetail.Location = new Point(pMain.Width / 2, 0);
+                pDetail.Size = new Size(pMain.Width / 2, pMain.Height);
+            };
+
+            return pMain;
+        }
+
+        private void PaintCard(Graphics g, Panel p, string title, bool hasDropDown)
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var pen = new Pen(Color.FromArgb(30, 255, 255, 255)))
+                g.DrawRectangle(pen, 0, 0, p.Width - 1, p.Height-1);
+            using (var br = new SolidBrush(Color.FromArgb(20, 255, 255, 255)))
+                g.FillRectangle(br, 0, 0, p.Width, 24);
+            using (var pen = new Pen(Color.FromArgb(25, 255, 255, 255)))
+                g.DrawLine(pen, 0, 24, p.Width, 24);
+            using (var br = new SolidBrush(AppColor.Accent))
+                g.FillEllipse(br, 8, 10, 4, 4);
+            using (var f = new Font("Consolas", 7.5f, FontStyle.Bold))
+            using (var br = new SolidBrush(AppColor.TextPrimary))
+                g.DrawString(title.ToUpper(), f, br, 16, 7);
+            if (hasDropDown)
+            {
+                using (var br = new SolidBrush(AppColor.Accent))
+                    g.FillPolygon(br, new Point[] { new Point(p.Width - 16, 8), new Point(p.Width - 8, 8), new Point(p.Width - 12, 16) });
+            }
+        }
+    }
+}
