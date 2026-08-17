@@ -1,0 +1,295 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
+
+namespace WindowsFormsApp2
+{
+    public partial class Form1 : Form
+    {
+        private readonly Color BgDeep = Color.FromArgb(13, 15, 20);
+        private readonly Color BgPanel = Color.FromArgb(19, 22, 30);
+        private readonly Color BgCard = Color.FromArgb(24, 28, 39);
+        private readonly Color BgHover = Color.FromArgb(30, 35, 54);
+        private readonly Color Accent = Color.FromArgb(0, 212, 170);
+        private readonly Color AccentDim = Color.FromArgb(0, 179, 143);
+        private readonly Color Gold = Color.FromArgb(240, 165, 0);
+        private readonly Color Red = Color.FromArgb(255, 77, 106);
+        private readonly Color Blue = Color.FromArgb(77, 159, 255);
+        private readonly Color TextPrimary = Color.FromArgb(232, 236, 245);
+        private readonly Color TextSecondary = Color.FromArgb(122, 130, 153);
+        private readonly Color TextMuted = Color.FromArgb(69, 77, 102);
+
+        private Panel pnlTitleBar, pnlMain, pnlStatusBar;
+        private Label lblStatus, lblClock;
+        private Timer clockTimer;
+        public Form1()
+        {
+            //InitializeComponent();
+            BuildUI();
+            StartPriceTicker();
+        }
+
+        private void BuildUI()
+        {
+            this.Text = "MES Dashboard";
+            this.Size = new Size(1100, 700);
+            this.MinimumSize = new Size(900, 600);
+            this.BackColor = BgDeep;
+            this.ForeColor = TextPrimary;
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.Font = new Font("Segoe UI", 9f);
+            this.DoubleBuffered = true;
+            this.FormBorderStyle = FormBorderStyle.None;
+
+
+            BuildTitleBar();
+            BuildStatusBar();
+            BuildMain();
+        }
+        private void BuildMain()
+        {
+            pnlMain = new Panel { Dock = DockStyle.Fill, BackColor = BgDeep };
+    
+            TableLayoutPanel tblMain = new TableLayoutPanel 
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 1,
+                ColumnCount = 2,
+                Padding = new Padding(0,46,0,28),
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
+            };
+            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));
+            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+            Panel pnlStationMenu = BuildStationMenu();
+            tblMain.Controls.Add(pnlStationMenu, 0, 0);
+
+            TableLayoutPanel pnlStationDetail = BuildStationDetail();
+            tblMain.Controls.Add(pnlStationDetail, 1, 0);
+
+            pnlMain.Controls.Add(tblMain);
+            this.Controls.Add(pnlMain);
+        }
+        private Panel BuildStationMenu()
+        {
+            Panel pnlStationMenu = new Panel {Dock = DockStyle.Fill, BackColor = BgPanel };
+
+            pnlStationMenu.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(25, 255, 255, 255)))
+                    e.Graphics.DrawRectangle(pen, 0, 0,
+                                               pnlStationMenu.Width-1 , pnlStationMenu.Height-1);
+            };
+            pnlStationMenu.Resize += (s, e) => pnlStationMenu.Invalidate();
+
+            int cardY = 0;
+
+            Panel p = new Panel { BackColor = BgPanel, Location = new Point(0, cardY), Size = new Size(pnlStationMenu.Width-6, 24) };
+            p.Paint += (s, e) => PaintCard(e.Graphics, p, "Line", true);
+            pnlStationMenu.Controls.Add(p);
+
+            return pnlStationMenu;
+        }
+        private TableLayoutPanel BuildStationDetail()
+        {
+            TableLayoutPanel tblDetail = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 1,
+                ColumnCount = 2,
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
+            };
+
+            tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+
+            Panel pnlSysDetail = new Panel { Dock = DockStyle.Fill, BackColor = BgCard };
+            pnlSysDetail.Paint += (s, e) =>
+            {
+                PaintCard(e.Graphics, pnlSysDetail, "System Detail", false);
+                DrawResultRow(e.Graphics, pnlSysDetail.Width, 30, "SysCode", "SC01", AccentDim);
+                DrawResultRow(e.Graphics, pnlSysDetail.Width, 50, "SysName", "System Name 1", Accent);
+                DrawResultRow(e.Graphics, pnlSysDetail.Width, 70, "PointCode", "PC01", Gold);
+                DrawResultRow(e.Graphics, pnlSysDetail.Width, 90, "PointName", "Point Name 1", Blue);
+                DrawResultRow(e.Graphics, pnlSysDetail.Width, 110, "IP Address", "127.0.0.1",Color.White);
+                DrawResultRow(e.Graphics, pnlSysDetail.Width, 90, "PointName", "Point Name 1", Blue);
+
+            };
+            pnlSysDetail.Resize += (s, e) => pnlSysDetail.Invalidate();
+            tblDetail.Controls.Add(pnlSysDetail, 0, 0);
+
+            Panel pnlJobDetail = new Panel { Dock = DockStyle.Fill, BackColor = BgCard }; ;
+            pnlJobDetail.Paint += (s, e) => PaintCard(e.Graphics, pnlJobDetail, "Job Detail", false);
+            pnlJobDetail.Resize += (s, e) => pnlJobDetail.Invalidate();
+            tblDetail.Controls.Add(pnlJobDetail, 1, 0);
+
+
+            return tblDetail;
+        }
+        private void DrawResultRow(Graphics g, int W, int y, string label, string val, Color col)
+        {
+            using (var f = new Font("Segoe UI", 8.5f))
+            using (var br = new SolidBrush(TextSecondary))
+                g.DrawString(label, f, br, 10, y);
+            using (var f = new Font("Consolas", 9.5f, FontStyle.Bold))
+            using (var br = new SolidBrush(col))
+            {
+                var sf = new StringFormat { Alignment = StringAlignment.Far };
+                g.DrawString(val, f, br, new RectangleF(0, y, W - 10, 20), sf);
+            }
+            using (var pen = new Pen(Color.FromArgb(8, 255, 255, 255)))
+                g.DrawLine(pen, 10, y + 20, W - 10, y + 20);
+        }
+        private void PaintCard(Graphics g, Panel p, string title, bool hasDropDown)
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var pen = new Pen(Color.FromArgb(30, 255, 255, 255)))
+                g.DrawRectangle(pen, 0, 0, p.Width - 1, p.Height - 1);
+            using (var br = new SolidBrush(Color.FromArgb(20, 255, 255, 255)))
+                g.FillRectangle(br, 0, 0, p.Width, 24);
+            using (var pen = new Pen(Color.FromArgb(25, 255, 255, 255)))
+                g.DrawLine(pen, 0, 24, p.Width, 24);
+            using (var br = new SolidBrush(Accent))
+                g.FillEllipse(br, 8, 10, 4, 4);
+            using (var f = new Font("Consolas", 7.5f, FontStyle.Bold))
+            using (var br = new SolidBrush(TextPrimary))
+                g.DrawString(title.ToUpper(), f, br, 16, 7);
+            if (hasDropDown)
+            {
+                using (var br = new SolidBrush(Accent))
+                    g.FillPolygon(br, new Point[] { new Point(p.Width - 16, 8), new Point(p.Width - 8, 8), new Point(p.Width - 12, 16) });
+            }
+        }
+        private void BuildTitleBar()
+        {
+            pnlTitleBar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 46,
+                BackColor = BgPanel,
+            };
+            pnlTitleBar.Paint += TitleBar_Paint;
+            pnlTitleBar.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    NativeMethods.ReleaseCapture();
+                    NativeMethods.SendMessage(this.Handle, 0xA1, (IntPtr)0x2, IntPtr.Zero);
+                }
+            };
+
+            var btnClose = MakeWinBtn(Color.FromArgb(255, 95, 86));
+            var btnMin = MakeWinBtn(Color.FromArgb(255, 189, 46));
+            var btnMax = MakeWinBtn(Color.FromArgb(39, 201, 63));
+
+            btnClose.Click += (s, e) => this.Close();
+            btnMin.Click += (s, e) => this.WindowState = FormWindowState.Minimized;
+            btnMax.Click += (s, e) => this.WindowState =
+                this.WindowState == FormWindowState.Maximized
+                    ? FormWindowState.Normal
+                    : FormWindowState.Maximized;
+
+            pnlTitleBar.Controls.AddRange(new Control[] { btnMin, btnMax, btnClose });
+
+            void PositionWinBtns()
+            {
+                btnClose.Location = new Point(pnlTitleBar.Width - 28, 17);
+                btnMax.Location = new Point(pnlTitleBar.Width - 48, 17);
+                btnMin.Location = new Point(pnlTitleBar.Width - 68, 17);
+                pnlTitleBar.Invalidate();
+            }
+            PositionWinBtns();
+            pnlTitleBar.Resize += (s, e) => PositionWinBtns();
+
+            this.Controls.Add(pnlTitleBar);
+        }
+        private void BuildStatusBar()
+        {
+            pnlStatusBar = new Panel { Dock = DockStyle.Bottom, Height = 28, BackColor = BgPanel };
+            pnlStatusBar.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(25, 255, 255, 255)))
+                    e.Graphics.DrawLine(pen, 0, 0, pnlStatusBar.Width, 0);
+                using (var f = new Font("Consolas", 8f))
+                using (var br = new SolidBrush(TextMuted))
+                {
+                    e.Graphics.DrawString("Done...", f, br, pnlStatusBar.Width - 80, 7);
+                }
+            };
+
+            lblStatus = new Label { Text = "● Ready", Location = new Point(14, 7), Size = new Size(90, 14), ForeColor = Accent, Font = new Font("Consolas", 8f), BackColor = Color.Transparent };
+            lblClock = new Label { Location = new Point(200, 7), Size = new Size(180, 14), ForeColor = TextMuted, Font = new Font("Consolas", 8f), BackColor = Color.Transparent, Text = DateTime.Now.ToString("HH:mm:ss · dd.MM.yyyy") };
+            pnlStatusBar.Controls.AddRange(new Control[] { lblStatus, lblClock });
+
+            pnlStatusBar.Resize += (s, e) =>pnlStatusBar.Invalidate();
+
+            this.Controls.Add(pnlStatusBar);
+        }
+        private void TitleBar_Paint(object sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            using (var br = new SolidBrush(Accent))
+                g.FillEllipse(br, 16, 19, 8, 8);
+            using (var f = new Font("Segoe UI", 11f, FontStyle.Bold))
+            using (var br = new SolidBrush(TextPrimary))
+                g.DrawString("MES Dashboard", f, br, 32, 14);
+            using (var f = new Font("Consolas", 8f))
+            using (var br = new SolidBrush(TextMuted))
+                g.DrawString("Version 1.0.0", f, br, 34, 30);
+
+            int pw = pnlTitleBar.Width;
+            var pill = new Rectangle(pw - 240, 13, 158, 20);
+            using (var br = new SolidBrush(Color.FromArgb(30, 0, 212, 170)))
+                g.FillRectangle(br, pill);
+            using (var pen = new Pen(Color.FromArgb(80, 0, 212, 170)))
+                g.DrawRectangle(pen, pill);
+            using (var br = new SolidBrush(Accent))
+                g.FillEllipse(br, pill.X + 6, pill.Y + 7, 6, 6);
+            using (var f = new Font("Consolas", 8f, FontStyle.Bold))
+            using (var br = new SolidBrush(Accent))
+                g.DrawString("LIVE · MetaQuotes-Demo", f, br, pill.X + 16, pill.Y + 4);
+
+            using (var pen = new Pen(Color.FromArgb(25, 255, 255, 255)))
+                g.DrawLine(pen, 0, pnlTitleBar.Height - 1, pnlTitleBar.Width, pnlTitleBar.Height - 1);
+        }
+        private Panel MakeWinBtn(Color col)
+        {
+            var p = new Panel { Size = new Size(12, 12), BackColor = col, Cursor = Cursors.Hand };
+            p.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var br = new SolidBrush(p.BackColor))
+                    e.Graphics.FillEllipse(br, 0, 0, 11, 11);
+            };
+            p.MouseEnter += (s, e) => p.BackColor = ControlPaint.Light(col, 0.3f);
+            p.MouseLeave += (s, e) => p.BackColor = col;
+            return p;
+        }
+        private void StartPriceTicker()
+        {
+            clockTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+            clockTimer.Tick += (s, e) =>
+            {
+                if (lblClock != null) lblClock.Text = DateTime.Now.ToString("HH:mm:ss · dd.MM.yyyy");
+            };
+            clockTimer.Start(); 
+        }
+    }
+    internal static class NativeMethods
+    {
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern bool ReleaseCapture();
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern IntPtr SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
+    }
+}
