@@ -1,0 +1,58 @@
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace WindowsFormsApp2
+{
+    public partial class Form2 : Form
+    {
+        private FlowLayoutPanel containerPanel;
+        public Form2()
+        {
+            InitializeContainer();
+            CreateMultipleCards();
+        }
+        private void InitializeContainer()
+        {
+            this.Size = new Size(1000, 600);
+            this.BackColor = Color.FromArgb(20, 20, 20);
+
+            containerPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,          
+                FlowDirection = FlowDirection.TopDown, 
+                WrapContents = true,        
+                Padding = new Padding(15)
+            };
+
+            this.Controls.Add(containerPanel);
+        }
+        private void CreateMultipleCards()
+        {
+            for (int i = 1; i <= 5; i++)
+            {
+                Color accent = (i % 2 == 0) ? Color.DeepSkyBlue : Color.MediumSpringGreen;
+
+                CustomCard card = new CustomCard($"CARD SECTION {i}", accent, 180);
+
+                for (int j = 1; j <= 10; j++)
+                {
+                    Button btn = new Button
+                    {
+                        Text = $"Item {i}-{j}",
+                        Size = new Size(240, 28),
+                        Location = new Point(10, (j - 1) * 33),
+                        ForeColor = Color.White,
+                        FlatStyle = FlatStyle.Flat,
+                        BackColor = Color.FromArgb(40, 255, 255, 255)
+                    };
+                    card.AddControl(btn);
+                }
+
+                containerPanel.Controls.Add(card.CardPanel);
+            }
+        }
+
+    }
+}
