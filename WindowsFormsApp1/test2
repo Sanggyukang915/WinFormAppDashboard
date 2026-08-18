@@ -1,0 +1,104 @@
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace WindowsFormsApp2
+{
+    public class CustomCard
+    {
+        public Panel CardPanel { get; private set; }
+
+        private Panel headerPanel;
+        private Panel contentPanel;
+        private bool isExpanded = true;
+        private int expandedContentHeight = 150;
+        private string title;
+        private Color accentColor;
+
+        public CustomCard(string title, Color accentColor, int height = 150)
+        {
+            this.title = title;
+            this.accentColor = accentColor;
+            this.expandedContentHeight = height;
+
+            InitializeUI();
+        }
+
+        private void InitializeUI()
+        {
+            CardPanel = new Panel
+            {
+                Size = new Size(300, 24 + expandedContentHeight),
+                Margin = new Padding(10),
+                BackColor = Color.FromArgb(30, 30, 35)
+            };
+
+            headerPanel = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 24
+            };
+            headerPanel.Paint += HeaderPanel_Paint;
+            headerPanel.MouseClick += HeaderPanel_MouseClick;
+
+            contentPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true
+            };
+
+            CardPanel.Controls.Add(contentPanel);
+            CardPanel.Controls.Add(headerPanel);
+        }
+
+        public void AddControl(Control ctrl)
+        {
+            contentPanel.Controls.Add(ctrl);
+        }
+
+        private void HeaderPanel_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            Panel p = (Panel)sender;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            using (var br = new SolidBrush(Color.FromArgb(20, 255, 255, 255)))
+                g.FillRectangle(br, 0, 0, p.Width, p.Height);
+            using (var pen = new Pen(Color.FromArgb(25, 255, 255, 255)))
+                g.DrawLine(pen, 0, p.Height - 1, p.Width, p.Height - 1);
+
+            using (var br = new SolidBrush(accentColor))
+                g.FillEllipse(br, 8, 10, 4, 4);
+            using (var f = new Font("Consolas", 7.5f, FontStyle.Bold))
+            using (var br = new SolidBrush(Color.LightGray))
+                g.DrawString(title.ToUpper(), f, br, 16, 6);
+
+            int arrowX = p.Width - 16;
+            int arrowY = 12;
+            Point[] arrowPoints = isExpanded
+                ? new[] { new Point(arrowX - 4, arrowY + 2), new Point(arrowX + 4, arrowY + 2), new Point(arrowX, arrowY - 2) }
+                : new[] { new Point(arrowX - 4, arrowY - 2), new Point(arrowX + 4, arrowY - 2), new Point(arrowX, arrowY + 2) };
+
+            using (var br = new SolidBrush(Color.LightGray))
+                g.FillPolygon(br, arrowPoints);
+        }
+
+        private void HeaderPanel_MouseClick(object sender, MouseEventArgs e)
+        {
+            isExpanded = !isExpanded;
+
+            if (isExpanded)
+            {
+                contentPanel.Visible = true;
+                CardPanel.Height = 24 + expandedContentHeight;
+            }
+            else
+            {
+                contentPanel.Visible = false;
+                CardPanel.Height = 24;
+            }
+
+            headerPanel.Invalidate();
+        }
+    }
+}
