@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using WindowsFormsApp1.UI;
 
 namespace WindowsFormsApp1
 {
@@ -21,42 +22,46 @@ namespace WindowsFormsApp1
         {
             _mainForm = mainForm;
 
-
             if (!dbconn.GetData(query, pointInfos))
                 return;
         }
 
         public void BuildPage()
         {
-            pnlMain = new Panel { BackColor = AppColor.BgDeep};
-            Panel pnlLineMenu = BuildLineMenu();
-            Panel pnlLineDetail = BuildLineDetail();
+            pnlMain = new Panel { Dock = DockStyle.Fill, BackColor = AppColor.BgDeep };
 
-        
-            pnlMain.Controls.AddRange(new Control[] { pnlLineMenu, pnlLineDetail });
-            _mainForm.Controls.Add(pnlMain);
-
-            pnlMain.Resize += (s, e) =>
+            TableLayoutPanel tblMain = new TableLayoutPanel
             {
-                pnlLineMenu.Size = new Size(200, pnlMain.Height);
-                pnlLineDetail.Location = new Point(200, 0);
-                pnlLineDetail.Size = new Size(pnlMain.Width - 200, pnlMain.Height);
-                pnlLineMenu.Refresh();
-                pnlLineDetail.Refresh();
+                Dock = DockStyle.Fill,
+                RowCount = 1,
+                ColumnCount = 2,
+                Padding = new Padding(0, 46, 0, 28),
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
             };
+            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));
+            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+            FlowLayoutPanel pnlStationMenu = BuildStationMenu();
+            tblMain.Controls.Add(pnlStationMenu, 0, 0);
+
+            TableLayoutPanel pnlStationDetail = BuildStationDetail();
+            tblMain.Controls.Add(pnlStationDetail, 1, 0);
+
+            pnlMain.Controls.Add(tblMain);
+            _mainForm.Controls.Add(pnlMain);
         }
 
-        private Panel BuildLineMenu()
+        private FlowLayoutPanel BuildStationMenu()
         {
-            Panel pMain = new Panel { BackColor = AppColor.BgPanel };
+            FlowLayoutPanel pnlStationMenu = new FlowLayoutPanel { Dock = DockStyle.Fill, BackColor = AppColor.BgPanel, FlowDirection = FlowDirection.TopDown, WrapContents = true };
 
-            pMain.Paint += (s, e) =>
+            pnlStationMenu.Paint += (s, e) =>
             {
                 using (var pen = new Pen(Color.FromArgb(25, 255, 255, 255)))
-                    e.Graphics.DrawLine(pen, pMain.Width - 1, 0,
-                                             pMain.Width - 1, pMain.Height);
+                    e.Graphics.DrawRectangle(pen, 0, 0,
+                                               pnlStationMenu.Width - 1, pnlStationMenu.Height - 1);
             };
-
+            pnlStationMenu.Resize += (s, e) => pnlStationMenu.Invalidate();
             if (pointInfos.Rows.Count > 0)
             {
                 var groupData = from row in pointInfos.AsEnumerable()
@@ -67,67 +72,89 @@ namespace WindowsFormsApp1
                                     Rows = g.ToList(),
                                     Count = g.Count(),
                                 };
-                int cardY = 0;
+                int menuCount = groupData.Count();
                 foreach (var group in groupData)
                 {
-                    Panel p = new Panel { BackColor = AppColor.BgPanel, Location = new Point(0, cardY), Size = new Size(200, 24) };
-                    p.Paint += (s, e) => PaintCard(e.Graphics, p, group.LineName.ToString(), true);
-                    cardY += 24;
-
-                    //int y = 34;
-                    //foreach (var row in group.Rows)
-                    //{
-                    //    p.Controls.Add(new Label
-                    //    {
-                    //        Text = row["SysName"].ToString(),
-                    //        Location = new Point(10, y),
-                    //        Size = new Size(135, 16),
-                    //        ForeColor = AppColor.TextPrimary,
-                    //        Font = new Font("Segoe UI", 8f),
-                    //        BackColor = Color.Transparent
-                    //    });
-                    //    y += 22;
-                    //}
-                    pMain.Controls.Add(p);
+                    CustomCard card = new CustomCard(group.LineName.ToString(), AppColor.BgCard);
+                    int itemY = 0;
+                    foreach (var row in group.Rows)
+                    {
+                        Label items = new Label
+                        {
+                            Location = new Point(0, itemY),
+                            Size = new Size(171, 16),
+                            Text = row["SysName"].ToString(),
+                            Font = new Font("Segoe UI",9f),
+                            BackColor = Color.Transparent,
+                        };
+                        itemY += 17;
+                        card.AddControl(items);
+                    }
+                    pnlStationMenu.Controls.Add(card.CardPanel);
                 }
             }
-            return pMain;
+
+            return pnlStationMenu;
         }
-        private Panel BuildLineDetail()
+        private TableLayoutPanel BuildStationDetail()
         {
-            Panel pMain = new Panel { BackColor = AppColor.BgPanel };
-
-            pMain.Paint += (s, e) =>
+            TableLayoutPanel tblDetail = new TableLayoutPanel
             {
-                using (var pen = new Pen(Color.FromArgb(25, 255, 255, 255)))
-                    e.Graphics.DrawLine(pen, pMain.Width - 1, 0,
-                                             pMain.Width - 1, pMain.Height);
+                Dock = DockStyle.Fill,
+                RowCount = 1,
+                ColumnCount = 2,
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
             };
 
-            Panel pSys = new Panel { BackColor = AppColor.BgCard };
-            Panel pDetail = new Panel { BackColor = AppColor.BgCard };
+            tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
 
-            pSys.Paint += (s, e) => PaintCard(e.Graphics, pSys, "System Detail", false);
-            pDetail.Paint += (s, e) => PaintCard(e.Graphics, pDetail, "Station Detail", false);
-
-
-
-            pMain.Controls.AddRange(new Control[] { pSys, pDetail });
-            pMain.Resize += (s, e) =>
+            Panel pnlSysDetail = new Panel { Dock = DockStyle.Fill, BackColor = AppColor.BgCard };
+            pnlSysDetail.Paint += (s, e) =>
             {
-                pSys.Size = new Size(pMain.Width / 2, pMain.Height);
-                pDetail.Location = new Point(pMain.Width / 2, 0);
-                pDetail.Size = new Size(pMain.Width / 2, pMain.Height);
+                PaintCard(e.Graphics, pnlSysDetail, "System Detail", false);
+            };
+            pnlSysDetail.Resize += (s, e) => pnlSysDetail.Invalidate();
+            tblDetail.Controls.Add(pnlSysDetail, 1, 0);
+
+            Panel pnlJobDetail = new Panel { Dock = DockStyle.Fill, BackColor = AppColor.BgCard }; ;
+            pnlJobDetail.Paint += (s, e) =>
+            {
+                PaintCard(e.Graphics, pnlJobDetail, "Job Detail", false);
             };
 
-            return pMain;
+            pnlJobDetail.Resize += (s, e) => pnlJobDetail.Invalidate();
+            tblDetail.Controls.Add(pnlJobDetail, 0, 0);
+
+
+            return tblDetail;
+        }
+
+        private void DrawTextRow(Graphics g, int W, int y, string label, string val, Color col)
+        {
+            using (var f = new Font("Segoe UI", 8.5f))
+            using (var br = new SolidBrush(AppColor.TextSecondary))
+                g.DrawString(label, f, br, 10, y);
+            using (var f = new Font("Consolas", 9.5f, FontStyle.Bold))
+            using (var br = new SolidBrush(col))
+            {
+                var sf = new StringFormat { Alignment = StringAlignment.Far };
+                g.DrawString(val, f, br, new RectangleF(0, y, W - 10, 20), sf);
+            }
+            using (var pen = new Pen(Color.FromArgb(8, 255, 255, 255)))
+                g.DrawLine(pen, 10, y + 20, W - 10, y + 20);
+        }
+
+        private string getDataField(DataTable dt,string id)
+        {
+            return dt.Rows[0][id] == null || dt.Rows[0][id] == DBNull.Value ? "No Data" : dt.Rows[0][id].ToString();
         }
 
         private void PaintCard(Graphics g, Panel p, string title, bool hasDropDown)
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
             using (var pen = new Pen(Color.FromArgb(30, 255, 255, 255)))
-                g.DrawRectangle(pen, 0, 0, p.Width - 1, p.Height-1);
+                g.DrawRectangle(pen, 0, 0, p.Width - 1, p.Height - 1);
             using (var br = new SolidBrush(Color.FromArgb(20, 255, 255, 255)))
                 g.FillRectangle(br, 0, 0, p.Width, 24);
             using (var pen = new Pen(Color.FromArgb(25, 255, 255, 255)))
